@@ -25,6 +25,7 @@ import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifest
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
@@ -172,6 +173,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
 
   @Component
   protected MavenProjectHelper projectHelper;
+
+  @Component
+  protected ArtifactHandlerManager artifactHandlerManager;
 
   public String getModuleVersion() {
     return moduleVersion;

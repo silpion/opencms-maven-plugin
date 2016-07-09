@@ -23,11 +23,14 @@ package com.mediaworx.mojo.opencms;
 
 import org.apache.maven.archiver.MavenArchiveConfiguration;
 import org.apache.maven.archiver.MavenArchiver;
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.project.artifact.AttachedArtifact;
 import org.codehaus.plexus.archiver.Archiver;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
@@ -109,6 +112,13 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
       archiver.addDirectory(zipSource);
       archiver.setDestFile(new File(destination, moduleName + "_" + getModuleVersion() + ".zip"));
       archiver.createArchive();
+
+      // set zip as primary project artifact
+      ArtifactHandler zipHandler = artifactHandlerManager.getArtifactHandler("zip");
+      Artifact zipArtifact = new AttachedArtifact(project.getArtifact(), "zip", null, zipHandler);
+      zipArtifact.setFile(archiver.getDestFile());
+      zipArtifact.setResolved(true);
+      project.setArtifact(zipArtifact);
 
     } catch (ArchiverException ex) {
       throw new MojoExecutionException("Could not zip the module directory", ex);
