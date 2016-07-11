@@ -266,4 +266,17 @@
             </build>
         </profile>
     </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>silpion-artifactory-plugin-releases</id>
+            <name>Silpion Releases</name>
+            <url>http://artifactory.office.silpion.de/artifactory/plugins-release-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>silpion-artifactory-plugin-snapshots</id>
+            <name>Silpion Snapshots</name>
+            <url>http://artifactory.office.silpion.de/artifactory/plugins-snapshot-local</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
