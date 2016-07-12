@@ -161,6 +161,8 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   @Parameter(defaultValue = "false")
   protected Boolean addDependencies;
 
+  @Parameter(defaultValue = "false")
+  protected Boolean dependenciesWithVersion;
 
   protected String opencmsVersion = "";
 
@@ -221,8 +223,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         res.add(classes);
       }
 
-      if(null != srcResources)
+      if(null != srcResources) {
         res.addAll(srcResources);
+      }
 
       for (Resource resource : res) {
         File source = new File(resource.getDirectory());
@@ -262,19 +265,32 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
           continue OUTER;
         }
       }
-      String libDirectory = vfsRoot + "/system/modules/" + moduleName + "/lib";
+      String libDirectory = targetDir + "/system/modules/" + moduleName + "/lib";
       ScopeArtifactFilter filter = new ScopeArtifactFilter(Artifact.SCOPE_RUNTIME);
 
       if (!artifact.isOptional() && filter.include(artifact.artifact) && "jar".equals(artifact.getType())) {
-        getLog().info("Adding " + artifact.getFinalNameNoVersion());
+        String finalArtifactName = getArtifactName(artifact);
+        getLog().info("Adding " + finalArtifactName);
 
         try {
-          FileUtils.copyFile(artifact.getFile(), new File(libDirectory, artifact.getFinalNameNoVersion()));
+          FileUtils.copyFile(artifact.getFile(), new File(libDirectory, finalArtifactName));
         } catch (IOException e) {
-          throw new MojoExecutionException("Could not copy artifact: " + artifact.getFinalNameNoVersion() + " to "+libDirectory, e);
+          throw new MojoExecutionException("Could not copy artifact: " + finalArtifactName + " to "+libDirectory, e);
         }
       }
     }
+  }
+
+  private String getArtifactName(MavenArtifact artifact) {
+    String finalName;
+
+    if (!dependenciesWithVersion) {
+      finalName = artifact.getFinalNameNoVersion();
+    } else {
+      finalName = artifact.getDefaultFinalName();
+    }
+
+    return finalName;
   }
 
   private void generateManifest(File metaDir) throws MojoExecutionException  {
