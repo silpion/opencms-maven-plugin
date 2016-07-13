@@ -38,6 +38,8 @@ import org.apache.maven.project.MavenProjectBuilder;
 import org.apache.maven.project.MavenProjectHelper;
 import org.apache.maven.shared.artifact.filter.ScopeArtifactFilter;
 import org.apache.maven.shared.filtering.MavenProjectValueSource;
+import org.codehaus.plexus.interpolation.InterpolationException;
+import org.codehaus.plexus.interpolation.Interpolator;
 import org.codehaus.plexus.interpolation.InterpolatorFilterReader;
 import org.codehaus.plexus.interpolation.MapBasedValueSource;
 import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
@@ -418,7 +420,11 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   }
 
   protected String getTargetPath(Resource r) {
-    return (null == r.getTargetPath())?"":"/"+r.getTargetPath();
+    try {
+      return (null == r.getTargetPath()) ? "" : "/" + createPropertyInterpolator().interpolate(r.getTargetPath());
+    } catch (InterpolationException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   protected Set<MavenArtifact> getProjectArtifacts() {
@@ -444,25 +450,10 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
       return new FileUtils.FilterWrapper[0];
     }
 
-    final String startExp = "${";
-    final String endExp = "}";
-    final String escapeString = "\\";
-    final Map<String, String> values = new HashMap<String, String>();
-
-    values.put("moduleversion", project.getProperties().getProperty("moduleversion", moduleVersion));
-    values.put("modulename", project.getProperties().getProperty("modulename", moduleName));
-    values.put("modulenicename", project.getProperties().getProperty("modulenicename", project.getName()));
-    values.put("moduledescription", project.getProperties().getProperty("moduledescription", project.getDescription()));
-    values.put("opencmsversion", project.getProperties().getProperty("opencmsversion", opencmsVersion));
-
     FileUtils.FilterWrapper wrapper = new FileUtils.FilterWrapper() {
       public Reader getReader(Reader reader) {
-        StringSearchInterpolator propertiesInterpolator = new StringSearchInterpolator(startExp, endExp);
-        propertiesInterpolator.addValueSource(new MavenProjectValueSource(project, true));
-        propertiesInterpolator.addValueSource(new PropertiesBasedValueSource(project.getProperties()));
-        propertiesInterpolator.addValueSource(new MapBasedValueSource(values));
-        propertiesInterpolator.setEscapeString(escapeString);
-        InterpolatorFilterReader interpolatorFilterReader = new InterpolatorFilterReader(reader, propertiesInterpolator, startExp, endExp);
+        Interpolator propertiesInterpolator = createPropertyInterpolator();
+        InterpolatorFilterReader interpolatorFilterReader = new InterpolatorFilterReader(reader, propertiesInterpolator);
         interpolatorFilterReader.setInterpolateWithPrefixPattern(false);
         return interpolatorFilterReader;
       }
@@ -482,6 +473,25 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
       originalVersionNumber = originalVersionNumber.replaceAll("\\D+$", "");
     }
     return originalVersionNumber;
+  }
+
+  protected Interpolator createPropertyInterpolator() {
+    String escapeString = "\\";
+    Map<String, String> values = new HashMap<>();
+
+    values.put("moduleversion", project.getProperties().getProperty("moduleversion", moduleVersion));
+    values.put("modulename", project.getProperties().getProperty("modulename", moduleName));
+    values.put("modulenicename", project.getProperties().getProperty("modulenicename", project.getName()));
+    values.put("moduledescription", project.getProperties().getProperty("moduledescription", project.getDescription()));
+    values.put("opencmsversion", project.getProperties().getProperty("opencmsversion", opencmsVersion));
+
+    StringSearchInterpolator propertiesInterpolator = new StringSearchInterpolator();
+    propertiesInterpolator.addValueSource(new MavenProjectValueSource(project, true));
+    propertiesInterpolator.addValueSource(new PropertiesBasedValueSource(project.getProperties()));
+    propertiesInterpolator.addValueSource(new MapBasedValueSource(values));
+    propertiesInterpolator.setEscapeString(escapeString);
+
+    return propertiesInterpolator;
   }
 
   protected void attachModuleResource(ModuleResource resource) {
