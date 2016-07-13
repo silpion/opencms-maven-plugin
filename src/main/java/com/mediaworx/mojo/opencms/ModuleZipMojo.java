@@ -46,7 +46,6 @@ import java.io.IOException;
 @Mojo(name = "module-zip",
       defaultPhase = LifecyclePhase.PACKAGE,
       requiresDependencyResolution = ResolutionScope.RUNTIME)
-
 public class ModuleZipMojo extends AbstractOpenCmsMojo {
   /**
    * The Maven Session Object
@@ -54,6 +53,9 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
    */
   @Parameter(readonly = true, required = true, defaultValue = "${session}")
   protected MavenSession session;
+
+  @Parameter(defaultValue = "true")
+  protected Boolean addJarToModule;
 
   /**
    * Used to create .jar archive for Maven dependency resolution.
@@ -71,21 +73,24 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
    * Creates an OpenCms module zip and jar containing classes for use as Maven dependency.
    */
   public void execute() throws MojoExecutionException, MojoFailureException {
+    File destination = new File(moduleDir);
+    if (!destination.exists() && !destination.mkdirs()) {
+      throw new MojoExecutionException("Couldn't create destination directory " + destination.getAbsolutePath());
+    }
 
     buildModule();
 
     if(addDependencies) {
       addDependencies();
     }
+    addJar(destination);
 
     addManifest();
 
-    File destination = new File(moduleDir);
+    addModuleZip(destination);
+  }
 
-    if (!destination.exists() && !destination.mkdirs()) {
-      throw new MojoExecutionException("Couldn't create destination directory " + destination.getAbsolutePath());
-    }
-
+  private void addJar(File destination) throws MojoExecutionException {
     File jarFile = new File(destination, project.getBuild().getFinalName() + ".jar" );
 
     try {
@@ -96,15 +101,24 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
         jarArchiver.addDirectory(getClassesDirectory());
       }
       archiver.createArchive(session, project, archive);
-      projectHelper.attachArtifact(project, "jar", null, jarFile);
-    } catch (ManifestException e){
-      throw new MojoExecutionException("Cannot create jar", e);
-    } catch (IOException e) {
+
+      ArtifactHandler jarHandler = artifactHandlerManager.getArtifactHandler("jar");
+      Artifact jarArtifact = new AttachedArtifact(project.getArtifact(), "jar", null, jarHandler);
+      jarArtifact.setFile(jarFile);
+      jarArtifact.setResolved(true);
+      project.addAttachedArtifact(jarArtifact);
+
+      if (Boolean.TRUE.equals(addJarToModule)) {
+        copyLibraryToModule(wrap(jarArtifact));
+      }
+    } catch (ManifestException | IOException e){
       throw new MojoExecutionException("Cannot create jar", e);
     } catch (DependencyResolutionRequiredException e) {
       throw new MojoExecutionException("Cannot resolve dependencies", e);
     }
+  }
 
+  private void addModuleZip(File destination) throws MojoExecutionException {
     File zipSource = new File(targetDir);
     try {
 
@@ -120,11 +134,8 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
       zipArtifact.setResolved(true);
       project.setArtifact(zipArtifact);
 
-    } catch (ArchiverException ex) {
-      throw new MojoExecutionException("Could not zip the module directory", ex);
-    } catch (IOException ex) {
+    } catch (ArchiverException | IOException ex) {
       throw new MojoExecutionException("Could not zip the module directory", ex);
     }
-
   }
 }
