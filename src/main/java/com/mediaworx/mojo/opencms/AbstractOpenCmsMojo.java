@@ -82,6 +82,12 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   protected File classesDirectory;
 
   /**
+   * Whether to include classes in final module zip.
+   */
+  @Parameter(defaultValue = "true")
+  protected Boolean addClasses;
+
+  /**
    * This is the temporary folder where the module is assembled.
    */
   @Parameter(defaultValue="${project.build.directory}/opencms-module")
@@ -220,7 +226,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     Boolean hasClassesDir = false;
     Boolean isClassesUnderVfs = false;
     if (classesDirectory.exists() && classesDirectory.isDirectory()) {
-      hasClassesDir = true;
+      hasClassesDir = Boolean.TRUE.equals(addClasses);
       isClassesUnderVfs = classesDirectory.getAbsolutePath().startsWith(vfsRootF.getAbsolutePath());
     }
 
