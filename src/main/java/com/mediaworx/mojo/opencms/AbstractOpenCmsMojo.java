@@ -172,7 +172,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   @Parameter(defaultValue = "false")
   protected Boolean addDependencies;
 
-  @Parameter(defaultValue = "false")
+  @Parameter(defaultValue = "true")
   protected Boolean dependenciesWithVersion;
 
   protected String opencmsVersion = "";
