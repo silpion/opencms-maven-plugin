@@ -24,6 +24,7 @@ package com.mediaworx.mojo.opencms;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifestGenerator;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -260,6 +261,13 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
             getLog().debug("Copying " + file.getAbsolutePath());
             File destination = new File(targetPath, file.getAbsolutePath().substring(srcPath.length() + 1));
             FileUtils.copyFile(file, destination);
+
+            // when no meta file exists for file, attache as module resource, so we add a file entry later
+            String fileVfsPath = StringUtils.removeStart(destination.getAbsolutePath(), targetPath);
+            File metaFile = new File(manifestMetaDir, fileVfsPath + ".ocmsfile.xml");
+            if (!metaFile.exists()) {
+              attachModuleResource(new ModuleResource.Plain(destination));
+            }
           }
         }
       }

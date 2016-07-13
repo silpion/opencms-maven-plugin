@@ -38,4 +38,12 @@ public class ModuleResource {
         }
 
     }
+
+    public static class Plain extends ModuleResource {
+
+        public Plain(File file) {
+            super("plain", file);
+        }
+
+    }
 }

@@ -66,7 +66,7 @@ public class ModuleManifest {
         String name = "/templates/file_" + resource.getType() + ".xml";
         InputStream input = getClass().getResourceAsStream(name);
         if (input == null) {
-            log.warn("Skip adding resource to module, no template found: '" + name + "'!");
+            log.warn("Skip adding resource '" + resource.getFile().getAbsolutePath() + "' to module, no template found: '" + name + "'!");
             return;
         }
 
