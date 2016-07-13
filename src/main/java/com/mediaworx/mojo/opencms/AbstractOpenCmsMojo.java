@@ -38,13 +38,24 @@ import org.apache.maven.project.MavenProjectBuilder;
 import org.apache.maven.project.MavenProjectHelper;
 import org.apache.maven.shared.artifact.filter.ScopeArtifactFilter;
 import org.apache.maven.shared.filtering.MavenProjectValueSource;
-import org.codehaus.plexus.interpolation.*;
+import org.codehaus.plexus.interpolation.InterpolatorFilterReader;
+import org.codehaus.plexus.interpolation.MapBasedValueSource;
+import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
+import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.codehaus.plexus.util.FileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 //import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 
@@ -161,6 +172,8 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   @Parameter(defaultValue = "false")
   protected Boolean addDependencies;
 
+  @Parameter(defaultValue = "false")
+  protected Boolean dependenciesWithVersion;
 
   protected String opencmsVersion = "";
 
@@ -176,6 +189,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
 
   @Component
   protected ArtifactHandlerManager artifactHandlerManager;
+
+  /* a list of dynamically added resources, like: JARs  */
+  protected List<ModuleResource> attachedModuleResources = new LinkedList<>();
 
   public String getModuleVersion() {
     return moduleVersion;
@@ -221,8 +237,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         res.add(classes);
       }
 
-      if(null != srcResources)
+      if(null != srcResources) {
         res.addAll(srcResources);
+      }
 
       for (Resource resource : res) {
         File source = new File(resource.getDirectory());
@@ -262,19 +279,44 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
           continue OUTER;
         }
       }
-      String libDirectory = vfsRoot + "/system/modules/" + moduleName + "/lib";
+
       ScopeArtifactFilter filter = new ScopeArtifactFilter(Artifact.SCOPE_RUNTIME);
 
       if (!artifact.isOptional() && filter.include(artifact.artifact) && "jar".equals(artifact.getType())) {
-        getLog().info("Adding " + artifact.getFinalNameNoVersion());
-
-        try {
-          FileUtils.copyFile(artifact.getFile(), new File(libDirectory, artifact.getFinalNameNoVersion()));
-        } catch (IOException e) {
-          throw new MojoExecutionException("Could not copy artifact: " + artifact.getFinalNameNoVersion() + " to "+libDirectory, e);
-        }
+        copyLibraryToModule(artifact);
       }
     }
+  }
+
+  protected void copyLibraryToModule(MavenArtifact artifact) throws MojoExecutionException {
+    String libDirectory = getModuleLibDir();
+
+    String finalArtifactName = getArtifactName(artifact);
+    getLog().info("Adding " + finalArtifactName);
+
+    try {
+      File destination = new File(libDirectory, finalArtifactName);
+      FileUtils.copyFile(artifact.getFile(), destination);
+      attachModuleResource(new ModuleResource.Jar(destination));
+    } catch (IOException e) {
+      throw new MojoExecutionException("Could not copy artifact: " + finalArtifactName + " to " + libDirectory, e);
+    }
+  }
+
+  protected String getModuleLibDir() {
+    return targetDir + "/system/modules/" + moduleName + "/lib";
+  }
+
+  private String getArtifactName(MavenArtifact artifact) {
+    String finalName;
+
+    if (!dependenciesWithVersion) {
+      finalName = artifact.getFinalNameNoVersion();
+    } else {
+      finalName = artifact.getDefaultFinalName();
+    }
+
+    return finalName;
   }
 
   private void generateManifest(File metaDir) throws MojoExecutionException  {
@@ -298,9 +340,6 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   }
 
   private void fixTimestamp(File metaDir) throws MojoExecutionException {
-
-
-
     List<File> metaFiles;
     try {
       String vfsRootCanon = new File(vfsRoot).getCanonicalPath();
@@ -351,9 +390,26 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     }
 
     try {
-      FileUtils.copyFile(src, new File(targetDir, "manifest.xml"), "UTF-8", filters(true));
+      File manifestTarget = new File(targetDir, "manifest.xml");
+      FileUtils.copyFile(src, manifestTarget, "UTF-8", filters(true));
+
+      addAttachedResourcesToManifest(manifestTarget);
     } catch (IOException ex) {
       throw new MojoExecutionException("Could not copy manifest", ex);
+    }
+  }
+
+  private void addAttachedResourcesToManifest(File src) throws MojoExecutionException {
+    try {
+      ModuleManifest moduleManifest = new ModuleManifest(src)
+              .setLog(getLog());
+      for (ModuleResource moduleResource : attachedModuleResources) {
+        moduleManifest.addResource(moduleResource);
+      }
+
+      moduleManifest.write(new FileOutputStream(src));
+    } catch (OpenCmsMetaXmlParseException | IOException e) {
+      throw new MojoExecutionException(e.getMessage(), e);
     }
   }
 
@@ -426,5 +482,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
       originalVersionNumber = originalVersionNumber.replaceAll("\\D+$", "");
     }
     return originalVersionNumber;
+  }
+
+  protected void attachModuleResource(ModuleResource resource) {
+    attachedModuleResources.add(resource);
   }
 }

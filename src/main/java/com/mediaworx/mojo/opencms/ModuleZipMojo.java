@@ -72,11 +72,11 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
    */
   public void execute() throws MojoExecutionException, MojoFailureException {
 
+    buildModule();
+
     if(addDependencies) {
       addDependencies();
     }
-
-    buildModule();
 
     addManifest();
 

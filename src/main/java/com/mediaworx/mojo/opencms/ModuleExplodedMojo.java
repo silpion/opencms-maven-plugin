@@ -33,7 +33,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "module-exploded",
       defaultPhase = LifecyclePhase.PACKAGE,
       requiresProject = true,requiresDependencyResolution = ResolutionScope.RUNTIME)
-
 public class ModuleExplodedMojo extends AbstractOpenCmsMojo {
   /**
    * Creates an exploded OpenCms module in targetDir.
@@ -46,7 +45,11 @@ public class ModuleExplodedMojo extends AbstractOpenCmsMojo {
   public void execute() throws MojoExecutionException, MojoFailureException {
 
     buildModule();
-    addDependencies();
+
+    if (addDependencies) {
+      addDependencies();
+    }
+
     addManifest();
 
   }
