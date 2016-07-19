@@ -171,6 +171,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   @Parameter
   protected List<Resource> srcResources;
 
+  @Parameter(defaultValue = "true")
+  protected Boolean failOnMissingResource;
+
   /**
    * Whether to include project dependencies in the module.
    * This will only add the files to the module zip,
@@ -247,7 +250,18 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
       }
 
       if(null != srcResources) {
-        res.addAll(srcResources);
+        for (Resource srcResource : srcResources) {
+          try {
+            FileUtils.getFiles(new File(srcResource.getDirectory()), null, excludes);
+            res.add(srcResource);
+          } catch (IllegalStateException e) {
+            getLog().warn("Resource doesn't exists: " + e.getMessage());
+            getLog().debug(e);
+            if (failOnMissingResource) {
+              throw e;
+            }
+          }
+        }
       }
 
       for (Resource resource : res) {
