@@ -28,7 +28,8 @@ public class ModuleResource {
 
     public String getVfsPath(String reference) {
         String thisPath = file.getAbsolutePath();
-        return StringUtils.removeStart(thisPath, reference + File.separator);
+        String s = StringUtils.removeStart(thisPath, reference + File.separator);
+        return s.replaceAll(File.separator, "/");
     }
 
     public static class Jar extends ModuleResource {
