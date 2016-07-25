@@ -24,6 +24,8 @@ package com.mediaworx.mojo.opencms;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifestGenerator;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
+
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -91,20 +93,20 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   /**
    * This is the temporary folder where the module is assembled.
    */
-  @Parameter(defaultValue="${project.build.directory}/opencms-module")
+  @Parameter(defaultValue = "${project.build.directory}/opencms-module")
   protected String targetDir = null;
 
   /**
    * The Name of the module, defaults to <tt>${project.groupId}.${project.artifactId}</tt>.
    */
-  @Parameter(defaultValue="${project.groupId}.${project.artifactId}")
+  @Parameter(defaultValue = "${project.groupId}.${project.artifactId}")
   protected String moduleName = "";
 
   /**
    * The Version of the module. Defaults to <tt>${project.version}</tt> with non numeric characters being removed from the end,
    * e.g. <tt>-SNAPSHOT</tt>.
    */
-  @Parameter(defaultValue="${project.version}")
+  @Parameter(defaultValue = "${project.version}")
   protected String moduleVersion = "";
 
   /**
@@ -249,7 +251,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         res.add(classes);
       }
 
-      if(null != srcResources) {
+      if (null != srcResources) {
         for (Resource srcResource : srcResources) {
           try {
             FileUtils.getFiles(new File(srcResource.getDirectory()), null, excludes);
@@ -268,7 +270,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         File source = new File(resource.getDirectory());
         files = FileUtils.getFiles(source, null, excludes).iterator();
         String srcPath = source.getAbsolutePath();
-        String targetPath = targetDir + getTargetPath(resource);
+        String targetPath = FilenameUtils.normalize(targetDir + getTargetPath(resource));
         while (files.hasNext()) {
           File file = (File) files.next();
           if (file.isFile()) {
@@ -277,7 +279,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
             FileUtils.copyFile(file, destination);
 
             // when no meta file exists for file, attache as module resource, so we add a file entry later
-            String fileVfsPath = StringUtils.removeStart(destination.getAbsolutePath(), targetPath);
+            String fileVfsPath = StringUtils.removeStart(FilenameUtils.normalize(destination.getAbsolutePath()), targetPath);
             File metaFile = new File(manifestMetaDir, fileVfsPath + ".ocmsfile.xml");
             if (!metaFile.exists()) {
               attachModuleResource(new ModuleResource.Plain(destination));
@@ -349,13 +351,13 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     return finalName;
   }
 
-  private void generateManifest(File metaDir) throws MojoExecutionException  {
+  private void generateManifest(File metaDir) throws MojoExecutionException {
 
     System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");
-    System.setProperty("org.slf4j.simpleLogger.showThreadName","false");
-    System.setProperty("org.slf4j.simpleLogger.showDateTime","false");
+    System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+    System.setProperty("org.slf4j.simpleLogger.showDateTime", "false");
     System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
-    System.setProperty("org.slf4j.simpleLogger.showLogName","false");
+    System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
 
     OpenCmsModuleManifestGenerator mg = new OpenCmsModuleManifestGenerator();
 
@@ -378,10 +380,12 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
       for (File metaFile : metaFiles) {
         File realFile = new File(metaFile.getCanonicalPath().replace(metaDirCanon, vfsRootCanon).replaceFirst("\\.ocmsfile\\.xml$", ""));
         if (realFile.isFile() && realFile.exists()) {
-          if (getLog().isDebugEnabled())
+          if (getLog().isDebugEnabled()) {
             getLog().debug("Set " + metaFile.getCanonicalPath() + " from " + realFile.getCanonicalPath());
-          if (!metaFile.setLastModified(realFile.lastModified()))
+          }
+          if (!metaFile.setLastModified(realFile.lastModified())) {
             getLog().warn("Failed to set last modified on " + metaFile.getCanonicalPath());
+          }
         } else {
           getLog().warn("*** Missing file referenced in manifest ***");
           getLog().warn(realFile.getAbsolutePath() + " for " + metaFile.getAbsolutePath() + " not found");
@@ -416,7 +420,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     }
 
     if (!src.exists() || !src.isFile()) {
-      throw new MojoExecutionException("Could not find " + (isGenerated?"generated":"" + " manifest: ") + src.getAbsolutePath());
+      throw new MojoExecutionException("Could not find " + (isGenerated ? "generated" : "" + " manifest: ") + src.getAbsolutePath());
     }
 
     try {
@@ -432,7 +436,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
   private void addAttachedResourcesToManifest(File src) throws MojoExecutionException {
     try {
       ModuleManifest moduleManifest = new ModuleManifest(src)
-              .setLog(getLog());
+          .setLog(getLog());
       for (ModuleResource moduleResource : attachedModuleResources) {
         moduleManifest.addResource(moduleResource);
       }
