@@ -25,6 +25,7 @@ import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifest
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -188,6 +189,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
 
   @Parameter(defaultValue = "true")
   protected Boolean dependenciesWithVersion;
+
+  @Parameter(defaultValue = "false", property = "skipOpenCms")
+  protected Boolean skipExecution;
 
   protected String opencmsVersion = "";
 
@@ -528,5 +532,9 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
 
   protected void attachModuleResource(ModuleResource resource) {
     attachedModuleResources.add(resource);
+  }
+
+  public boolean isSkipExecution() {
+    return skipExecution != null && skipExecution;
   }
 }
