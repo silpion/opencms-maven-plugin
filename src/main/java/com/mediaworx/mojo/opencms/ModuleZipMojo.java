@@ -73,13 +73,15 @@ public class ModuleZipMojo extends AbstractOpenCmsMojo {
    * Creates an OpenCms module zip and jar containing classes for use as Maven dependency.
    */
   public void execute() throws MojoExecutionException, MojoFailureException {
-    if (isSkipExecution()) {
-      getLog().info("Skipping create OpenCms Module ZIP");
-    }
-
     File destination = new File(moduleDir);
     if (!destination.exists() && !destination.mkdirs()) {
       throw new MojoExecutionException("Couldn't create destination directory " + destination.getAbsolutePath());
+    }
+
+    if (isSkipExecution()) {
+      addJar(destination);
+      getLog().info("Skipping create OpenCms Module");
+      return;
     }
 
     buildModule();
