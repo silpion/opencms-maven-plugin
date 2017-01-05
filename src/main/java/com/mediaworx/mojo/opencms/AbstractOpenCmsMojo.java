@@ -25,7 +25,6 @@ import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifest
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -272,27 +271,68 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
 
       for (Resource resource : res) {
         File source = new File(resource.getDirectory());
-        files = FileUtils.getFiles(source, null, excludes).iterator();
+        files = getFilesAnDDirectories(source, null, excludes).iterator();
         String srcPath = source.getAbsolutePath();
         String targetPath = FilenameUtils.normalize(targetDir + getTargetPath(resource));
         while (files.hasNext()) {
           File file = (File) files.next();
           if (file.isFile()) {
-            getLog().debug("Copying " + file.getAbsolutePath());
-            File destination = new File(targetPath, file.getAbsolutePath().substring(srcPath.length() + 1));
-            FileUtils.copyFile(file, destination);
-
-            // when no meta file exists for file, attache as module resource, so we add a file entry later
-            String fileVfsPath = StringUtils.removeStart(FilenameUtils.normalize(destination.getAbsolutePath()), targetPath);
-            File metaFile = new File(manifestMetaDir, fileVfsPath + ".ocmsfile.xml");
-            if (!metaFile.exists()) {
-              attachModuleResource(new ModuleResource.Plain(destination));
+            attachFile(srcPath, targetPath, file);
+          } else if (file.isDirectory()) {
+            if(!file.equals(source)) {
+              attachFolder(srcPath, targetPath, file);
             }
           }
         }
       }
     } catch (IOException ex) {
       throw new MojoExecutionException("Could not copy file(s) to directory", ex);
+    }
+  }
+
+  private List<File> getFilesAnDDirectories(File source, String includes, String excludes) throws IOException {
+    List<String> directoryNames = FileUtils.getFileAndDirectoryNames(source, includes, excludes, false, true, false, true);
+    List<String> fileNames = FileUtils.getFileAndDirectoryNames(source, includes, excludes, false, true, true, false);
+
+    List<File> files = new ArrayList<>();
+    for ( String filename : directoryNames ) {
+      files.add( new File( source,filename ) );
+    }
+
+    for ( String filename : fileNames ) {
+      files.add( new File( source,filename ) );
+    }
+
+    return files;
+  }
+
+  private void attachFile(String srcPath, String targetPath, File file) throws IOException {
+    getLog().debug("Copying " + file.getAbsolutePath());
+    File destination = new File(targetPath, file.getAbsolutePath().substring(srcPath.length() + 1));
+    FileUtils.copyFile(file, destination);
+
+    String fileVfsPath = StringUtils.removeStart(FilenameUtils.normalize(destination.getAbsolutePath()), targetPath);
+    File metaFile = new File(manifestMetaDir, fileVfsPath + ".ocmsfile.xml");
+
+    // when no meta file exists for file, attache as module resource, so we add a file entry later
+    if (!metaFile.exists()) {
+      attachModuleResource(ModuleResource.ofFile(destination));
+    }
+  }
+
+  private void attachFolder(String srcPath, String targetPath, File file) throws IOException {
+    getLog().debug("Create Directory " + file.getAbsolutePath());
+    File destination = new File(targetPath, file.getAbsolutePath().substring(srcPath.length() + 1));
+    if(!destination.exists()){
+      destination.mkdir();
+    }
+
+    String fileVfsPath = StringUtils.removeStart(FilenameUtils.normalize(destination.getAbsolutePath()), targetPath);
+    File metaFile = new File(manifestMetaDir, fileVfsPath + ".ocmsfolder.xml");
+
+    // when no meta file exists for file, attache as module resource, so we add a file entry later
+    if (!metaFile.exists()) {
+      attachModuleResource(ModuleResource.ofFolder(destination));
     }
   }
 

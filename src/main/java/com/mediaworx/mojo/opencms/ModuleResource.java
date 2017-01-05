@@ -37,7 +37,6 @@ public class ModuleResource {
         public Jar(File file) {
             super("binary", file);
         }
-
     }
 
     public static class Plain extends ModuleResource {
@@ -45,6 +44,40 @@ public class ModuleResource {
         public Plain(File file) {
             super("plain", file);
         }
+    }
 
+    public static class Image extends ModuleResource {
+
+        public Image(File file) {
+            super("image", file);
+        }
+    }
+
+    public static class Folder extends ModuleResource {
+        public Folder(File file) {
+            super("folder", file);
+        }
+    }
+
+    public static ModuleResource ofFile(File file) {
+        ModuleResource result = null;
+        String lowCaseExt = file.getName();
+        int dot = lowCaseExt.lastIndexOf('.');
+        if (dot != -1) {
+            lowCaseExt = lowCaseExt.substring(dot + 1);
+        }
+
+        if ("jpg".equals(lowCaseExt)
+            || "jpeg".equals(lowCaseExt)
+            || "png".equals(lowCaseExt)
+            || "gif".equals(lowCaseExt)) {
+            result = new Image(file);
+        }
+
+        return (result != null) ? result : new Plain(file);
+    }
+
+    public static ModuleResource ofFolder(File file) {
+        return new Folder(file);
     }
 }
