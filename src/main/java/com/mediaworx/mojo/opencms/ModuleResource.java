@@ -69,6 +69,7 @@ public class ModuleResource {
 
         if ("jpg".equals(lowCaseExt)
             || "jpeg".equals(lowCaseExt)
+            || "svg".equals(lowCaseExt)
             || "png".equals(lowCaseExt)
             || "gif".equals(lowCaseExt)) {
             result = new Image(file);
