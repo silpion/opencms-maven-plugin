@@ -3,6 +3,7 @@ package com.mediaworx.mojo.opencms;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.util.Objects;
 
 /**
  * @author schrader
@@ -80,5 +81,18 @@ public class ModuleResource {
 
     public static ModuleResource ofFolder(File file) {
         return new Folder(file);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ModuleResource that = (ModuleResource) o;
+        return Objects.equals(file.getAbsolutePath(), that.file.getAbsolutePath());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(file);
     }
 }
