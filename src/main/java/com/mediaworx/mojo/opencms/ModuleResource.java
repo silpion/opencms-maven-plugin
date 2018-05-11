@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * @author schrader
  */
-public class ModuleResource {
+public class ModuleResource implements Comparable<ModuleResource> {
 
     private String type;
 
@@ -33,22 +33,30 @@ public class ModuleResource {
         return s.replaceAll("\\\\", "/"); // windows crap
     }
 
-    public static class Jar extends ModuleResource {
+    @Override
+    public int compareTo(ModuleResource o) {
+        return file.getAbsolutePath().compareTo(o.getFile().getAbsolutePath());
+    }
 
+    public static class Jar extends Binary {
         public Jar(File file) {
+            super(file);
+        }
+    }
+
+    public static class Binary extends ModuleResource {
+        public Binary(File file) {
             super("binary", file);
         }
     }
 
     public static class Plain extends ModuleResource {
-
         public Plain(File file) {
             super("plain", file);
         }
     }
 
     public static class Image extends ModuleResource {
-
         public Image(File file) {
             super("image", file);
         }
@@ -69,10 +77,10 @@ public class ModuleResource {
         }
 
         if ("jpg".equals(lowCaseExt)
-            || "jpeg".equals(lowCaseExt)
-            || "svg".equals(lowCaseExt)
-            || "png".equals(lowCaseExt)
-            || "gif".equals(lowCaseExt)) {
+                || "jpeg".equals(lowCaseExt)
+                || "svg".equals(lowCaseExt)
+                || "png".equals(lowCaseExt)
+                || "gif".equals(lowCaseExt)) {
             result = new Image(file);
         }
 
