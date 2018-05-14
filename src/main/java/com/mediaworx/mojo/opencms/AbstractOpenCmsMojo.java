@@ -24,7 +24,6 @@ package com.mediaworx.mojo.opencms;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.OpenCmsModuleManifestGenerator;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlFileWriteException;
 import com.mediaworx.opencms.moduleutils.manifestgenerator.exceptions.OpenCmsMetaXmlParseException;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -53,14 +52,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 //import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 
@@ -168,7 +170,6 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
      * &nbsp;&nbsp;&lt;/resource&gt;
      * &lt;/srcResources&gt;
      * </pre>
-     *
      */
     @Parameter
     protected List<Resource> srcResources;
@@ -208,7 +209,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     protected ArtifactHandlerManager artifactHandlerManager;
 
     /* a list of dynamically added resources, like: JARs  */
-    protected Set<ModuleResource> attachedModuleResources = new HashSet<>();
+    protected Set<ModuleResource> attachedModuleResources = new TreeSet<>();
 
     public String getModuleVersion() {
         return moduleVersion;
@@ -221,7 +222,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         // only create the target directory when it doesn't exist
         // no deletion
         if (!target.exists() && !target.mkdirs()) {
-            throw new MojoFailureException("Couldn' create target directory " + target.getAbsolutePath());
+            throw new MojoFailureException("Couldn't create target directory " + target.getAbsolutePath());
         }
 
         getLog().info("Target is " + target);
@@ -275,10 +276,6 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
                 String srcPath = source.getAbsolutePath();
                 String targetPath = FilenameUtils.normalize(targetDir + getTargetPath(resource));
 
-                // add frontend  main folders to manifest
-                String targ = new File(targetPath).getParentFile().getAbsolutePath();
-                attachFolder(source.getParentFile().getAbsolutePath(), targ, source);
-
                 while (files.hasNext()) {
                     File file = (File) files.next();
                     if (file.isFile()) {
@@ -326,7 +323,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     }
 
     private void attachFolder(String srcPath, String targetPath, File file) throws IOException {
-        getLog().debug("Create Directory " + file.getAbsolutePath());
+        getLog().debug("Create Directory file: '" + file.getAbsolutePath() + "', srcPath: '" + srcPath + "', targetPath: '" + targetPath + "'");
         File destination = new File(targetPath, file.getAbsolutePath().substring(srcPath.length() + 1));
         if (!destination.exists()) {
             destination.mkdir();
@@ -384,7 +381,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         }
     }
 
-  protected String getModuleLibDir() {
+    protected String getModuleLibDir() {
         return targetDir + "/system/modules/" + moduleName + "/lib";
     }
 
@@ -572,7 +569,30 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     }
 
     protected void attachModuleResource(ModuleResource resource) {
+        attachParentFolders(resource);
         attachedModuleResources.add(resource);
+    }
+
+    private void attachParentFolders(ModuleResource resource) {
+        // the relativ path within VFS
+        Path vfsPath = Paths.get(resource.getVfsPath(targetDir));
+        if (!"folder".equals(resource.getType())) {
+            vfsPath = vfsPath.getParent();
+        }
+
+        // the sub-path for all parts
+        Path manifestSubPath = Paths.get(manifestMetaDir);
+        Path targetSubPath = Paths.get(targetDir);
+        for (Path pathPart : vfsPath) {
+            manifestSubPath = manifestSubPath.resolve(pathPart);
+            targetSubPath = targetSubPath.resolve(pathPart);
+
+            Path metaFile = Paths.get(manifestSubPath.toString() + ".ocmsfolder.xml");
+            if (!Files.exists(metaFile)) {
+                getLog().debug("Add parent folder: " + targetSubPath);
+                attachedModuleResources.add(ModuleResource.ofFolder(targetSubPath.toFile()));
+            }
+        }
     }
 
     public boolean isSkipExecution() {
