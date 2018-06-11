@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * {@link Artifact} is a bare data structure without any behavior and therefore
  * hard to write OO programs around it.
- * <p/>
+ * <p>
  * This class wraps {@link Artifact} and adds behaviours.
  *
  * @author Kohsuke Kawaguchi

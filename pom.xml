@@ -6,7 +6,7 @@
     <groupId>de.silpion.opencms.maven.plugins</groupId>
     <artifactId>opencms-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>2.5-SNAPSHOT</version>
+    <version>2.6.0</version>
 
     <name>OpenCms Maven Plugin</name>
     <description>This plugin packages OpenCms module zips.</description>
@@ -232,7 +232,7 @@
                     <inceptionYear>2017</inceptionYear>
                     <organizationName>Silpion IT-Solutions GmbH (https://www.silpion.de/)</organizationName>
                     <includes>
-                        <include>**/*.java</include>
+                        <include>src/**/*.java</include>
                     </includes>
                 </configuration>
                 <executions>
@@ -254,7 +254,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.4</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -282,11 +282,66 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>deploy</id>
+            <activation>
+                <property>
+                    <name>!develop</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
+                    <!-- https://mvnrepository.com/artifact/org.sonatype.plugins/nexus-staging-maven-plugin -->
                     <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+
+                    <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-gpg-plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-javadoc-plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <doclint>none</doclint>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-source-plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -302,15 +357,9 @@
     </profiles>
 
     <distributionManagement>
-        <repository>
-            <id>silpion-artifactory-plugin-releases</id>
-            <name>Silpion Releases</name>
-            <url>http://artifactory.office.silpion.de/artifactory/plugins-release-local</url>
-        </repository>
         <snapshotRepository>
-            <id>silpion-artifactory-plugin-snapshots</id>
-            <name>Silpion Snapshots</name>
-            <url>http://artifactory.office.silpion.de/artifactory/plugins-snapshot-local</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 </project>

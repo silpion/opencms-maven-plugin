@@ -126,7 +126,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
     protected String excludes = "";
 
     /**
-     * The manifest provided is filtered and copied to <tt>${targetDir}</tt> for inclusion in the module.<br/>
+     * The manifest provided is filtered and copied to <tt>${targetDir}</tt> for inclusion in the module.<br>
      * In addition to the standard Maven project properties and user properties, the following properties will be set up
      * from default Maven project properties as follows:
      * <ul>
@@ -161,7 +161,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
      * additional runtime dependencies will be included.
      * Currently only <tt>&lt;directory&gt;</tt> and <tt>&lt;targetPath&gt;</tt> are
      * evaluated. The <tt>&lt;targetPath&gt;</tt> configured is relative to <tt>${targetDir}</tt>.
-     * <br/>A possible configuration might look like
+     * <br>A possible configuration might look like
      * this:
      * <pre>
      * &lt;srcResources&gt;
