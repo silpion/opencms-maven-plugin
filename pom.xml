@@ -222,7 +222,7 @@
                     <inceptionYear>2017</inceptionYear>
                     <organizationName>Silpion IT-Solutions GmbH (https://www.silpion.de/)</organizationName>
                     <includes>
-                        <include>src/**/*.java</include>
+                        <include>**/*.java</include>
                     </includes>
                 </configuration>
                 <executions>
