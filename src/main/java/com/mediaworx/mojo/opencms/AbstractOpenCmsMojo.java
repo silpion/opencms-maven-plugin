@@ -412,7 +412,7 @@ public abstract class AbstractOpenCmsMojo extends AbstractMojo {
         try {
             mg.setReplaceMetaVariables(replaceMetaVariables);
             mg.generateManifest(metaDir);
-        } catch (OpenCmsMetaXmlParseException | OpenCmsMetaXmlFileWriteException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Error generating manifest", e);
         }
     }
